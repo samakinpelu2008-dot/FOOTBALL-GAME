@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Football Sim Tournament Advanced</title>
+<style>
+body{background:#0b132b;color:white;font-family:Arial;margin:0;padding:10px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+button{padding:4px 8px;margin-left:5px;cursor:pointer;border-radius:5px;border:none;background:#1c2541;color:white}
+.match{background:#1c2541;padding:10px;border-radius:8px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;align-items:center;margin:4px 0}
+#timeline{background:#3a506b;height:120px;overflow:auto;padding:5px;margin-top:5px;border-radius:5px}
+.win{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center}
+.win div{background:#0e2a47;padding:30px;border-radius:10px;text-align:center;}
+.bracket{display:flex;flex-wrap:wrap;justify-content:space-around;margin-top:10px}
+.bracket .team{width:150px;text-align:center;padding:5px;margin:2px;border-radius:5px;background:#1c2541;}
+</style>
+</head>
+<body>
+
+<header>
+<h2>⚽ Football Sim Tournament Advanced</h2>
+<h3>Balance: ₦<span id="balance">1000000</span></h3>
+</header>
+
+<div id="roundInfo"></div>
+<div id="bracket" class="bracket"></div>
+<div id="matches"></div>
+
+<h3>📌 Open Bets</h3>
+<div id="openBets"></div>
+
+<div id="popup" class="win" style="display:none;">
+  <div>
+    <h1>🎉 CONGRATULATIONS 🎉</h1>
+    <h2>🏆</h2>
+    <p>You won ₦<span id="winAmount"></span></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<script>
+// ---------- BALANCE ----------
+let balance = 1000000;
+
+// ---------- TEAMS 32 ----------
+let teams = [
+{n:"🇳🇬 Nigeria",p:85},{n:"🇧🇷 Brazil",p:88},{n:"🇦🇷 Argentina",p:87},{n:"🇫🇷 France",p:86},
+{n:"🇬🇧 England",p:84},{n:"🇪🇸 Spain",p:83},{n:"🇩🇪 Germany",p:82},{n:"🇵🇹 Portugal",p:81},
+{n:"🇮🇹 Italy",p:80},{n:"🇳🇱 Netherlands",p:80},{n:"🇧🇪 Belgium",p:79},{n:"🇭🇷 Croatia",p:79},
+{n:"🇺🇾 Uruguay",p:78},{n:"🇲🇦 Morocco",p:77},{n:"🇸🇳 Senegal",p:77},{n:"🇨🇴 Colombia",p:76},
+{n:"🇨🇭 Switzerland",p:75},{n:"🇯🇵 Japan",p:74},{n:"🇰🇷 South Korea",p:73},{n:"🇲🇽 Mexico",p:73},
+{n:"🇬🇭 Ghana",p:72},{n:"🇨🇲 Cameroon",p:72},{n:"🇺🇸 USA",p:71},{n:"🇪🇬 Egypt",p:70},
+{n:"🇨🇱 Chile",p:70},{n:"🇷🇸 Serbia",p:69},{n:"🇹🇷 Turkey",p:69},{n:"🇸🇦 Saudi Arabia",p:68},
+{n:"🇦🇺 Australia",p:67},{n:"🇮🇷 Iran",p:67},{n:"🇨🇷 Costa Rica",p:66},{n:"🇳🇿 New Zealand",p:64}
+];
+
+let roundTeams = [...teams];
+let openBets=[];
+
+// ---------- MARKET ----------
+let market = "1X2"; // 1X2, DC, O/U
+
+function calcOdds(p){return (100/p*1.05).toFixed(2);}
+
+// ---------- RENDER TOURNAMENT BRACKET ----------
+function renderBracket(){
+  const box = document.getElementById("bracket");
+  box.innerHTML = roundTeams.map(t=>`<div class="team">${t.n}</div>`).join("");
+  document.getElementById("roundInfo").innerHTML=`<h3>Round of ${roundTeams.length}</h3>`;
+}
+
+// ---------- RENDER MATCHES ----------
+function renderMatches(){
+  const box=document.getElementById("matches");
+  box.innerHTML="";
+  for(let i=0;i<roundTeams.length;i+=2){
+    const h=roundTeams[i],a=roundTeams[i+1];
+    box.innerHTML+=`
+    <div class="match" id="match-${i}">
+      <div class="row">${h.n}<span>${calcOdds(h.p)}</span>
+        <button onclick="bet('${h.n}','${a.n}','home',${h.p},${a.p},${i})">1</button></div>
+      <div class="row">${a.n}<span>${calcOdds(a.p)}</span>
+        <button onclick="bet('${h.n}','${a.n}','away',${h.p},${a.p},${i})">2</button></div>
+      <button onclick="bet('${h.n}','${a.n}','draw',${h.p},${a.p},${i})">X</button>
+      <button onclick="bet('${h.n}','${a.n}','1X',${h.p},${a.p},${i})">1X</button>
+      <button onclick="bet('${h.n}','${a.n}','X2',${h.p},${a.p},${i})">X2</button>
+      <button onclick="bet('${h.n}','${a.n}','12',${h.p},${a.p},${i})">12</button>
+      <button onclick="bet('${h.n}','${a.n}','O2.5',${h.p},${a.p},${i})">O2.5</button>
+      <button onclick="bet('${h.n}','${a.n}','U2.5',${h.p},${a.p},${i})">U2.5</button>
+      <h4>⏱ <span id="time-${i}">0</span>'</h4>
+      <h3 id="score-${i}">0 - 0</h3>
+      <div id="timeline-${i}"></div>
+    </div>`;
+  }
+  renderBracket();
+}
+
+// ---------- BET ----------
+function bet(home,away,pick,hPower,aPower,index){
+  const stake=50000;
+  if(balance<stake) return alert("Low balance");
+  balance-=stake;
+  updateBalance();
+  openBets.push({home,away,pick,stake,cashout:Math.floor(stake*0.7)});
+  simulateMatch(home,away,pick,hPower,aPower,index);
+  renderBets();
+}
+
+// ---------- OPEN BETS ----------
+function renderBets(){
+  const box=document.getElementById("openBets");
+  box.innerHTML=openBets.map((b,i)=>`
+    <div>${b.home} vs ${b.away} | ${b.pick} | ₦${b.stake}
+      <button onclick="cashout(${i})">Cashout ₦${b.cashout}</button>
+    </div>`).join("");
+}
+
+function cashout(i){
+  balance+=openBets[i].cashout;
+  openBets.splice(i,1);
+  updateBalance();
+  renderBets();
+}
+
+function updateBalance(){document.getElementById("balance").innerText=balance}
+
+// ---------- SIMULATE MATCH ----------
+function simulateMatch(home,away,pick,hPower,aPower,index){
+  let hg=0,ag=0,t=0;
+  const sim=setInterval(()=>{
+    t+=1; document.getElementById(`time-${index}`).innerText=t;
+    // Dynamic goal probabilities
+    if(Math.random()<hPower/(hPower+aPower)/2){hg++;log(index,`⚽ ${home} scored`);}
+    if(Math.random()<aPower/(hPower+aPower)/2){ag++;log(index,`⚽ ${away} scored`);}
+    if(Math.random()<0.05) log(index,"🟨 Yellow Card");
+    document.getElementById(`score-${index}`).innerText=`${hg} - ${ag}`;
+    // Update odds live
+    document.querySelector(`#match-${index} span:nth-child(2)`).innerText=calcOdds(hPower+(hg-ag));
+    if(t>=5){clearInterval(sim);settleBet({home,away,pick,hg,ag});nextRound(index,hg,ag);renderMatches();}
+  },300);
+}
+
+function log(i,msg){
+  const box=document.getElementById(`timeline-${i}`);
+  box.innerHTML+=msg+"<br>";
+  box.scrollTop=box.scrollHeight;
+}
+
+// ---------- SETTLE BET ----------
+function settleBet(b){
+  let win=false,total=b.hg+b.ag;
+  if(b.pick==="home" && b.hg>b.ag) win=true;
+  if(b.pick==="away" && b.ag>b.hg) win=true;
+  if(b.pick==="draw" && b.hg===b.ag) win=true;
+  if(b.pick==="1X" && b.hg>=b.ag) win=true;
+  if(b.pick==="X2" && b.ag>=b.hg) win=true;
+  if(b.pick==="12" && b.hg!=b.ag) win=true;
+  if(b.pick==="O2.5" && total>2) win=true;
+  if(b.pick==="U2.5" && total<=2) win=true;
+  if(win){
+    let prize=b.hg*10000+b.ag*10000; prize = prize<50000?50000:prize;
+    balance+=prize;
+    document.getElementById("winAmount").innerText=prize;
+    document.getElementById("popup").style.display="flex";
+  }
+}
+
+// ---------- NEXT ROUND ----------
+function nextRound(index,hg,ag){
+  const h=roundTeams[index],a=roundTeams[index+1];
+  const winner = hg>=ag?h.n:a.n;
+  roundTeams = roundTeams.filter((t,i)=>i!==index && i!==index+1);
+  roundTeams.push({n:winner,p:teams.find(x=>x.n===winner).p});
+}
+
+// ---------- POPUP ----------
+function closePopup(){document.getElementById("popup").style.display="none"}
+
+// ---------- INIT ----------
+renderMatches();
+</script>
+
+</body>
+</html>

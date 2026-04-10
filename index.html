@@ -1,236 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Football Sim Tournament</title>
-<style>
-body{margin:0;padding:0;font-family:Arial;background:#0b132b;color:white;}
-header{display:flex;justify-content:space-between;align-items:center;padding:10px;}
-button{cursor:pointer;padding:5px 10px;margin:2px;border:none;border-radius:5px;background:#1c2541;color:white;}
-.card{background:#1c2541;padding:15px;margin:10px auto;border-radius:8px;width:80%;display:flex;justify-content:space-between;align-items:center;}
-.odds{display:flex;gap:8px;justify-content:center;}
-.page{display:none;}
-#timeline{flex:1;height:200px;overflow-y:auto;background:#3a506b;padding:5px;margin:0 10px;border-radius:5px;}
-.team-col{width:25%;text-align:center;}
-.win{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;}
-.win div{background:#0e2a47;padding:30px;border-radius:10px;text-align:center;}
-input{padding:5px;width:80px;margin-right:5px;}
-h3,h2{margin:5px 0;}
-</style>
+    <meta charset="UTF-8">
+    <title>Ethical Hacking Practice Lab</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 50px; }
+        .container { background: #2d2d2d; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 400px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #444; background: #3d3d3d; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .secret-area { margin-top: 20px; padding: 15px; border: 1px dashed #555; display: none; background: #222; }
+        .hint { color: #888; font-size: 0.8em; margin-top: 20px; cursor: help; }
+        #output { margin-top: 15px; color: #ffca28; }
+    </style>
 </head>
 <body>
 
-<header>
-<h2>⚽ Football Sim Tournament</h2>
-<h3>Balance: ₦<span id="balance">1000000</span></h3>
-</header>
+    <h2>Target: SecurePortal v1.0</h2>
+    
+    <div class="container">
+        <div id="login-section">
+            <h3>Staff Login</h3>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="checkLogin()">Login</button>
+        </div>
 
-<!-- Pages -->
-<div id="homePage" class="page" style="display:block;">
-<h3>Current Round Matches</h3>
-<div id="matchesList"></div>
-<h3>📌 Open Bets</h3>
-<div id="openBetsList"></div>
-</div>
+        <div id="user-section" style="display:none;">
+            <h3>Welcome, Admin</h3>
+            <p>Update your status:</p>
+            <input type="text" id="statusInput" placeholder="How are you feeling?">
+            <button onclick="updateStatus()">Post Status</button>
+            <div id="output"></div>
+        </div>
+    </div>
 
-<div id="betSlipPage" class="page">
-<h3>Bet Slip</h3>
-<p id="betInfo"></p>
-<label>Stake: ₦<input type="number" id="stakeInput" value="10000"></label>
-<button onclick="confirmBet()">Confirm Bet</button>
-<button onclick="goHome()">Cancel</button>
-</div>
+    <div class="hint" onclick="alert('Try Inspecting the source code (Ctrl+U) or checking the checkLogin function in the console!')">
+        Need a hint? Click here.
+    </div>
 
-<div id="timelinePage" class="page">
-<h3 id="timelineMatchTitle"></h3>
-<div style="display:flex;align-items:center;">
-<div class="team-col" id="homeCol"></div>
-<div id="timeline"></div>
-<div class="team-col" id="awayCol"></div>
-</div>
-<button onclick="goHome()">Back</button>
-</div>
+    <script>
+        // MISSION 1: A "Hardcoded Credentials" vulnerability
+        // In a real site, this would be on a server. Here, it's visible in the source!
+        function checkLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
 
-<div id="popup" class="win" style="display:none;">
-<div>
-<h1>🎉 Congratulations 🎉</h1>
-<h2>🏆</h2>
-<p>You won ₦<span id="winAmount"></span></p>
-<button onclick="closePopup()">OK</button>
-</div>
-</div>
+            if (user === "admin" && pass === "p@ssword123") {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('user-section').style.display = 'block';
+            } else {
+                alert("Invalid credentials!");
+            }
+        }
 
-<script>
-// ---------- Balance ----------
-let balance = 1000000;
-let openBets = [];
-
-// ---------- Teams ----------
-let teams = [
-{n:"🇳🇬 NIGERIA",p:85},{n:"🇧🇷 BRAZIL",p:88},{n:"🇦🇷 ARGENTINA",p:87},{n:"🇫🇷 FRANCE",p:86},
-{n:"🇬🇧 ENGLAND",p:84},{n:"🇪🇸 SPAIN",p:83},{n:"🇩🇪 GERMANY",p:82},{n:"🇵🇹 PORTUGAL",p:81},
-{n:"🇮🇹 ITALY",p:80},{n:"🇳🇱 NETHERLANDS",p:80},{n:"🇧🇪 BELGIUM",p:79},{n:"🇭🇷 CROATIA",p:79},
-{n:"🇺🇾 URUGUAY",p:78},{n:"🇲🇦 MOROCCO",p:77},{n:"🇸🇳 SENEGAL",p:77},{n:"🇨🇴 COLOMBIA",p:76},
-{n:"🇨🇭 SWITZERLAND",p:75},{n:"🇯🇵 JAPAN",p:74},{n:"🇰🇷 SOUTH KOREA",p:73},{n:"🇲🇽 MEXICO",p:73},
-{n:"🇬🇭 GHANA",p:72},{n:"🇨🇲 CAMEROON",p:72},{n:"🇺🇸 USA",p:71},{n:"🇪🇬 EGYPT",p:70},
-{n:"🇨🇱 CHILE",p:70},{n:"🇷🇸 SERBIA",p:69},{n:"🇹🇷 TURKEY",p:69},{n:"🇸🇦 SAUDI ARABIA",p:68},
-{n:"🇦🇺 AUSTRALIA",p:67},{n:"🇮🇷 IRAN",p:67},{n:"🇨🇷 COSTA RICA",p:66},{n:"🇳🇿 NEW ZEALAND",p:64}
-];
-
-// ---------- Tournament ----------
-let roundTeams = [...teams];
-let currentMatches = [];
-let roundNumber=1;
-
-// ---------- Pages ----------
-function showPage(page){
-document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-document.getElementById(page).style.display="block";
-}
-
-// ---------- Render Home Matches ----------
-function renderHome(){
-let container = document.getElementById("matchesList");
-container.innerHTML="";
-currentMatches = [];
-for(let i=0;i<roundTeams.length;i+=2){
-let home=roundTeams[i],away=roundTeams[i+1];
-let card = document.createElement("div");
-card.className="card";
-card.innerHTML=`
-<div>${home.n}</div>
-<div class="odds">
-<button onclick="openBetSlip('${home.n}','${away.n}','1',${home.p},${away.p})">1</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','X',${home.p},${away.p})">X</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','2',${home.p},${away.p})">2</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','1X',${home.p},${away.p})">1X</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','X2',${home.p},${away.p})">X2</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','12',${home.p},${away.p})">12</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','O2.5',${home.p},${away.p})">O2.5</button>
-<button onclick="openBetSlip('${home.n}','${away.n}','U2.5',${home.p},${away.p})">U2.5</button>
-</div>
-<div>${away.n}</div>`;
-container.appendChild(card);
-currentMatches.push({home,away});
-}
-renderOpenBets();
-showPage("homePage");
-}
-
-// ---------- Bet Slip ----------
-let selectedBet=null;
-function openBetSlip(home,away,market,hPower,aPower){
-selectedBet={home,away,market,hPower,aPower};
-document.getElementById("betInfo").innerText=`${home} vs ${away} | ${market}`;
-document.getElementById("stakeInput").value=10000;
-showPage("betSlipPage");
-}
-
-function confirmBet(){
-let stake=parseInt(document.getElementById("stakeInput").value);
-if(stake>balance){alert("Insufficient balance");return;}
-balance-=stake;
-updateBalance();
-selectedBet.stake=stake;
-selectedBet.cashout=Math.floor(stake*0.7);
-openBets.push(selectedBet);
-simulateMatch(selectedBet);
-renderOpenBets();
-showPage("homePage");
-}
-
-// ---------- Render Open Bets ----------
-function renderOpenBets(){
-let container = document.getElementById("openBetsList");
-container.innerHTML="";
-openBets.forEach((b,i)=>{
-container.innerHTML+=`<div>${b.home} vs ${b.away} | ${b.market} | ₦${b.stake}
-<button onclick="cashout(${i})">Cashout ₦${b.cashout}</button>
-<button onclick="viewTimeline(${i})">Timeline</button>
-</div>`;
-});
-}
-
-// ---------- Cashout ----------
-function cashout(i){
-balance+=openBets[i].cashout;
-openBets.splice(i,1);
-updateBalance();
-renderOpenBets();
-}
-
-function updateBalance(){document.getElementById("balance").innerText=balance;}
-
-// ---------- Timeline Page ----------
-function viewTimeline(i){
-let b=openBets[i];
-document.getElementById("timelineMatchTitle").innerText=`${b.home} vs ${b.away}`;
-document.getElementById("homeCol").innerText=b.home;
-document.getElementById("awayCol").innerText=b.away;
-document.getElementById("timeline").innerHTML="";
-showPage("timelinePage");
-}
-
-// ---------- Match Simulation ----------
-function simulateMatch(bet){
-let hg=0,ag=0,t=0;
-let interval = setInterval(()=>{
-t++;
-if(Math.random()<bet.hPower/(bet.hPower+bet.aPower)/2){hg++;logTimeline(`${bet.home} scored (minute ${Math.floor(t*18)})`);}
-if(Math.random()<bet.aPower/(bet.hPower+bet.aPower)/2){ag++;logTimeline(`${bet.away} scored (minute ${Math.floor(t*18)})`);}
-if(Math.random()<0.05) logTimeline("🟨 Yellow card");
-if(Math.random()<0.02) logTimeline("🔴 Red card");
-if(Math.random()<0.03) logTimeline("🔁 Substitution");
-if(t>=5){clearInterval(interval);settleBet(bet,hg,ag);nextRound(bet,hg,ag);}
-},600);
-}
-
-function logTimeline(msg){
-let box=document.getElementById("timeline");
-box.innerHTML+=msg+"<br>";
-box.scrollTop=box.scrollHeight;
-}
-
-// ---------- Settle Bet ----------
-function settleBet(bet,hg,ag){
-let win=false,total=hg+ag;
-let m=bet.market;
-if(m=="1" && hg>ag) win=true;
-if(m=="2" && ag>hg) win=true;
-if(m=="X" && hg==ag) win=true;
-if(m=="1X" && hg>=ag) win=true;
-if(m=="X2" && ag>=hg) win=true;
-if(m=="12" && hg!=ag) win=true;
-if(m=="O2.5" && total>2) win=true;
-if(m=="U2.5" && total<=2) win=true;
-if(win){
-let prize=bet.stake*2;
-balance+=prize;
-updateBalance();
-document.getElementById("winAmount").innerText=prize;
-document.getElementById("popup").style.display="flex";
-}
-openBets=openBets.filter(b=>b!=bet);
-renderOpenBets();
-}
-
-// ---------- Tournament Progress ----------
-function nextRound(bet,hg,ag){
-let winner = hg>=ag?bet.home:bet.away;
-roundTeams = roundTeams.filter(t=>t.n!=bet.home && t.n!=bet.away);
-roundTeams.push({n:winner,p:teams.find(x=>x.n===winner).p});
-if(roundTeams.length>1){renderHome();}else{alert(`🏆 Tournament Winner: ${winner}`);}
-}
-
-// ---------- Popup ----------
-function closePopup(){document.getElementById("popup").style.display="none";}
-
-// ---------- Navigation ----------
-function goHome(){showPage("homePage");}
-
-// ---------- Init ----------
-renderHome();
-</script>
-
+        // MISSION 2: Reflected XSS vulnerability
+        // This function takes user input and puts it directly into the HTML 
+        // without "sanitizing" it.
+        function updateStatus() {
+            const input = document.getElementById('statusInput').value;
+            const display = document.getElementById('output');
+            
+            // VULNERABILITY: Using innerHTML allows the browser to execute <script> tags!
+            display.innerHTML = "Current Status: " + input;
+        }
+    </script>
 </body>
-</html>
+  </html>
+  

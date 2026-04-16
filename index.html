@@ -2,233 +2,221 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fresher's Cup - Official Broadcast</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fresher's Cup - Full Frame Broadcast</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --gold: #FFD700;
-            --red: #D32F2F;
-            --blue: #1976D2;
-            --bg-dark: rgba(15, 15, 15, 0.85);
-            --glass: blur(12px);
+            --red: #E53935;
+            --blue: #1E88E5;
+            --glass: rgba(0, 0, 0, 0.8);
         }
 
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background: #000;
+            background: #000; /* Dark background for letterboxing */
             font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
             color: white;
         }
 
-        /* --- VIDEO FIX: Full Screen Cover --- */
-        #video-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            overflow: hidden;
+        /* --- THE VIDEO CONTAINER (OBJECT-FIT: CONTAIN) --- */
+        #broadcast-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 56.25vw; /* Strict 16:9 Aspect Ratio */
+            max-height: 100vh;
+            max-width: 177.77vh;
+            background: #000;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
         #player {
-            width: 100vw;
-            height: 56.25vw; /* 16:9 aspect ratio */
-            min-height: 100vh;
-            min-width: 177.77vh; /* maintains 16:9 on tall screens */
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
             pointer-events: none;
         }
 
-        .video-overlay {
+        /* --- SCOREBOARD (Inside the video frame) --- */
+        #scoreboard {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 30%, rgba(0,0,0,0.6) 100%);
-            z-index: 2;
-        }
-
-        /* --- PRO SCORE BUG --- */
-        .score-bug {
-            position: absolute;
-            top: 20px; left: 20px;
+            top: 5%; left: 5%;
             z-index: 100;
-            display: none; /* Shown after start */
-            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+            display: none;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8));
         }
 
-        .bug-header {
+        .bug-top {
             background: var(--gold);
             color: #000;
-            font-size: 10px;
+            font-size: clamp(8px, 1.5vw, 12px);
             font-weight: 900;
-            padding: 2px 10px;
-            text-transform: uppercase;
-            width: fit-content;
-            letter-spacing: 1px;
+            padding: 2px 8px;
+            display: flex;
+            justify-content: space-between;
         }
 
         .bug-main {
             display: flex;
-            background: var(--bg-dark);
-            backdrop-filter: var(--glass);
-            height: 40px;
+            background: var(--glass);
+            backdrop-filter: blur(5px);
+            height: clamp(30px, 6vw, 45px);
             align-items: center;
-            border-left: 4px solid var(--gold);
         }
 
-        .team-box {
-            padding: 0 15px;
+        .team {
+            padding: 0 12px;
             font-family: 'Oswald', sans-serif;
-            font-size: 16px;
-            letter-spacing: 1px;
+            font-size: clamp(12px, 2.5vw, 18px);
+            text-transform: uppercase;
+            height: 100%;
+            display: flex;
+            align-items: center;
         }
 
-        .score-box {
-            width: 40px; height: 100%;
-            background: #fff; color: #000;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 22px;
+        .score {
+            width: clamp(30px, 6vw, 45px);
+            height: 100%;
+            background: #fff;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: clamp(14px, 3vw, 22px);
         }
 
-        .timer-box {
-            padding: 0 20px;
-            font-variant-numeric: tabular-nums;
+        .clock {
+            padding: 0 12px;
             font-weight: 700;
-            font-size: 16px;
-            border-left: 1px solid rgba(255,255,255,0.1);
+            font-variant-numeric: tabular-nums;
+            font-size: clamp(10px, 2vw, 16px);
         }
 
-        /* --- MATCH EVENTS (Cards/Goal) --- */
-        .event-banner {
+        /* --- NOTIFICATION POPUP --- */
+        #pop-event {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
             background: var(--gold);
             color: #000;
+            padding: 5px 20px;
             font-weight: 900;
-            text-align: center;
-            padding: 5px 0;
-            font-size: 12px;
             text-transform: uppercase;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease, opacity 0.3s;
+            border-radius: 4px;
             opacity: 0;
+            transition: 0.3s ease;
+            font-size: clamp(10px, 2vw, 14px);
         }
 
-        .score-bug.active-event .event-banner {
-            max-height: 30px;
-            opacity: 1;
-        }
+        #pop-event.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* --- UI CONTROLS --- */
-        .match-controls {
-            position: absolute;
-            bottom: 30px; left: 50%;
-            transform: translateX(-50%);
+        /* --- ADMIN PANEL --- */
+        .controls {
+            position: fixed;
+            bottom: 20px;
             z-index: 1000;
             display: none;
             gap: 10px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(255,255,255,0.1);
             padding: 10px;
-            border-radius: 15px;
+            border-radius: 10px;
             backdrop-filter: blur(10px);
         }
 
-        .btn-ui {
-            background: white; border: none; padding: 10px 15px;
-            border-radius: 8px; font-weight: 900; font-size: 11px;
-            cursor: pointer; text-transform: uppercase;
+        .btn {
+            background: #fff; border: none; padding: 8px 12px;
+            border-radius: 4px; font-weight: 900; cursor: pointer; font-size: 10px;
         }
 
-        #start-match {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: #000; z-index: 9999; display: flex;
+        #launcher {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 2000; display: flex;
             justify-content: center; align-items: center;
         }
     </style>
 </head>
 <body>
 
-    <div id="start-match">
-        <button class="btn-ui" style="padding: 20px 40px; font-size: 18px;" onclick="initBroadcast()">GO LIVE</button>
+    <div id="launcher">
+        <button class="btn" style="padding: 15px 30px; font-size: 14px;" onclick="start()">START BROADCAST</button>
     </div>
 
-    <div id="video-container">
+    <div id="broadcast-wrapper">
         <div id="player"></div>
-        <div class="video-overlay"></div>
-    </div>
 
-    <div class="score-bug" id="main-bug">
-        <div class="bug-header">FRESHER'S CUP • LIVE</div>
-        <div class="bug-main">
-            <div class="team-box" style="background: var(--red);">RED</div>
-            <div class="score-box" id="s-red">0</div>
-            <div class="score-box" id="s-blue">0</div>
-            <div class="team-box" style="background: var(--blue);">BLU</div>
-            <div class="timer-box" id="clock">00:00</div>
+        <div id="scoreboard">
+            <div class="bug-top">
+                <span>FRESHER'S CUP</span>
+                <span style="opacity: 0.8;">1ST HALF</span>
+            </div>
+            <div class="bug-main">
+                <div class="team" style="background: var(--red);">RED</div>
+                <div class="score" id="score-red">0</div>
+                <div class="score" id="score-blue">0</div>
+                <div class="team" style="background: var(--blue);">BLU</div>
+                <div class="clock" id="match-timer">00:00</div>
+            </div>
         </div>
-        <div class="event-banner" id="event-text">GOAL!</div>
+
+        <div id="pop-event">GOAL!</div>
     </div>
 
-    <div class="match-controls" id="controls">
-        <button class="btn-ui" onclick="handleEvent('red', 'goal')">+ RED GOAL</button>
-        <button class="btn-ui" onclick="handleEvent('blue', 'goal')">+ BLU GOAL</button>
-        <button class="btn-ui" onclick="handleEvent('red', 'yellow')" style="border-bottom: 3px solid gold">YELLOW</button>
+    <div class="controls" id="admin-ui">
+        <button class="btn" onclick="matchEvent('red', 'goal')">RED +1</button>
+        <button class="btn" onclick="matchEvent('blue', 'goal')">BLU +1</button>
+        <button class="btn" onclick="matchEvent('red', 'card')" style="background: #ffd600;">RED CARD</button>
+        <button class="btn" onclick="location.reload()" style="background: #ff4444; color:#fff;">RESET</button>
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        let player;
+        let yt;
         function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
+            yt = new YT.Player('player', {
                 videoId: 'O4v-o1xeco0',
-                playerVars: {
-                    'autoplay': 0, 'controls': 0, 'mute': 1, 'loop': 1, 
-                    'playlist': 'O4v-o1xeco0', 'rel': 0, 'modestbranding': 1, 'playsinline': 1
-                }
+                playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 1, 'loop': 1, 'playlist': 'O4v-o1xeco0', 'playsinline': 1 }
             });
         }
 
-        function initBroadcast() {
-            if(player && player.playVideo) {
-                player.playVideo();
-                document.getElementById('start-match').style.display = 'none';
-                document.getElementById('main-bug').style.display = 'block';
-                document.getElementById('controls').style.display = 'flex';
-                startClock();
+        function start() {
+            if(yt && yt.playVideo) {
+                yt.playVideo();
+                document.getElementById('launcher').style.display = 'none';
+                document.getElementById('scoreboard').style.display = 'block';
+                document.getElementById('admin-ui').style.display = 'flex';
+                runTimer();
             }
         }
 
-        function startClock() {
+        function runTimer() {
             let s = 0;
             setInterval(() => {
                 s++;
                 let m = Math.floor(s/60);
                 let sec = s%60;
-                document.getElementById('clock').innerText = 
+                document.getElementById('match-timer').innerText = 
                     `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
             }, 1000);
         }
 
-        function handleEvent(team, type) {
-            const bug = document.getElementById('main-bug');
-            const eventText = document.getElementById('event-text');
-            
+        function matchEvent(team, type) {
+            const pop = document.getElementById('pop-event');
             if(type === 'goal') {
-                eventText.innerText = "GOAL!";
-                eventText.style.background = "var(--gold)";
-                const el = document.getElementById(`s-${team}`);
-                el.innerText = parseInt(el.innerText) + 1;
-            } else if(type === 'yellow') {
-                eventText.innerText = `YELLOW CARD - ${team.toUpperCase()}`;
-                eventText.style.background = "#FFEB3B";
+                const s = document.getElementById(`score-${team}`);
+                s.innerText = parseInt(s.innerText) + 1;
+                pop.innerText = `GOAL - ${team.toUpperCase()}!`;
+            } else {
+                pop.innerText = `CARD - ${team.toUpperCase()}`;
             }
-
-            bug.classList.add('active-event');
-            setTimeout(() => bug.classList.remove('active-event'), 4000);
+            pop.classList.add('show');
+            setTimeout(() => pop.classList.remove('show'), 3000);
         }
     </script>
 </body>
